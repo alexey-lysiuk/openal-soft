@@ -1102,44 +1102,25 @@ SET(BACKENDS  "${BACKENDS} Null")
 
 option(ALSOFT_EMBED_HRTF_DATA "Embed the HRTF data files (increases library footprint)" OFF)
 if(ALSOFT_EMBED_HRTF_DATA)
-    if(WIN32)
-        set(ALC_OBJS  ${ALC_OBJS} Alc/hrtf_res.rc)
-    elseif(APPLE)
-        macro(add_custom_binary FILENAME BIN_NAME)
-            set(outfile ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${FILENAME}${CMAKE_C_OUTPUT_EXTENSION})
-            set(stubsrcfile ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${FILENAME}.stub.c)
-            set(stubfile ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${FILENAME}.stub${CMAKE_C_OUTPUT_EXTENSION})
-            add_custom_command(OUTPUT ${outfile}
-                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/hrtf/${FILENAME}"
-                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/hrtf"
-                COMMAND touch "${stubsrcfile}"
-                COMMAND "${CMAKE_C_COMPILER}" -o "${stubfile}" -c "${stubsrcfile}"
-                COMMAND "${CMAKE_LINKER}" -r -o "${outfile}" -sectcreate binary ${BIN_NAME} ${FILENAME} "${stubfile}"
-                COMMAND rm "${stubsrcfile}" "${stubfile}"
-                COMMENT "Generating ${FILENAME}${CMAKE_C_OUTPUT_EXTENSION}"
-                VERBATIM
-            )
-            set(ALC_OBJS  ${ALC_OBJS} ${outfile})
-        endmacro()
-        add_custom_binary(default-44100.mhr "default_44100")
-        add_custom_binary(default-48000.mhr "default_48000")
-    else()
-        set(FILENAMES default-44100.mhr default-48000.mhr)
-        foreach(FILENAME ${FILENAMES})
-            set(outfile ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${FILENAME}${CMAKE_C_OUTPUT_EXTENSION})
-            add_custom_command(OUTPUT ${outfile}
-                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/hrtf/${FILENAME}"
-                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/hrtf"
-                COMMAND "${CMAKE_LINKER}" -r -b binary -o "${outfile}" ${FILENAME}
-                COMMAND "${CMAKE_OBJCOPY}" --rename-section .data=.rodata,alloc,load,readonly,data,contents "${outfile}" "${outfile}"
-                COMMENT "Generating ${FILENAME}${CMAKE_C_OUTPUT_EXTENSION}"
-                VERBATIM
-            )
-            set(ALC_OBJS  ${ALC_OBJS} ${outfile})
-        endforeach()
-        unset(outfile)
-        unset(FILENAMES)
-    endif()
+    ADD_EXECUTABLE(bin2h utils/bin2h.c)
+    SET_PROPERTY(TARGET bin2h APPEND PROPERTY COMPILE_FLAGS ${EXTRA_CFLAGS})
+
+    macro(make_hrtf_header FILENAME VARNAME)
+        set(infile ${CMAKE_SOURCE_DIR}/hrtf/${FILENAME})
+        set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME}.h)
+
+        add_custom_command(OUTPUT "${outfile}"
+            COMMAND bin2h "${infile}" "${outfile}" ${VARNAME}
+            DEPENDS bin2h "${infile}"
+            COMMENT "Generating ${FILENAME}.h"
+            VERBATIM
+        )
+
+        set(ALC_OBJS ${ALC_OBJS} "${outfile}")
+    endmacro()
+
+    make_hrtf_header(default-44100.mhr "hrtf_default_44100")
+    make_hrtf_header(default-48000.mhr "hrtf_default_48000")
 endif()
 
 
