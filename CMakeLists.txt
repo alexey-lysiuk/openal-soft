@@ -1102,28 +1102,37 @@ SET(BACKENDS  "${BACKENDS} Null")
 
 option(ALSOFT_EMBED_HRTF_DATA "Embed the HRTF data files (increases library footprint)" OFF)
 if(ALSOFT_EMBED_HRTF_DATA)
-    IF(CMAKE_CROSSCOMPILING)
-        SET(IMPORT_EXECUTABLES "IMPORTFILE-NOTFOUND" CACHE FILEPATH "Point it to the export file from a native build")
-        INCLUDE(${IMPORT_EXECUTABLES})
+    SET(BIN2H_DIR  "${OpenAL_SOURCE_DIR}/utils/bin2h/")
+    SET(NATIVE_DIR  "${OpenAL_BINARY_DIR}/native/")
+    FILE(MAKE_DIRECTORY "${NATIVE_DIR}")
+
+    IF(MSVC)
+        SET(BIN2H_COMMAND  "${NATIVE_DIR}Release/bin2h.exe")
     ELSE()
-        ADD_EXECUTABLE(bin2h utils/bin2h.c)
-        SET_PROPERTY(TARGET bin2h APPEND PROPERTY COMPILE_FLAGS ${EXTRA_CFLAGS})
-        EXPORT(TARGETS bin2h FILE ${CMAKE_BINARY_DIR}/ImportExecutables.cmake )
+        SET(BIN2H_COMMAND  "${NATIVE_DIR}bin2h")
     ENDIF()
 
-    macro(make_hrtf_header FILENAME VARNAME)
-        set(infile ${CMAKE_SOURCE_DIR}/hrtf/${FILENAME})
-        set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME}.h)
+    ADD_CUSTOM_COMMAND(OUTPUT "${BIN2H_COMMAND}"
+        COMMAND ${CMAKE_COMMAND} "${BIN2H_DIR}" 
+        COMMAND ${CMAKE_COMMAND} --build . --config "Release"
+        WORKING_DIRECTORY "${NATIVE_DIR}"
+        DEPENDS "${BIN2H_DIR}CMakeLists.txt" "${BIN2H_DIR}bin2h.c"
+        VERBATIM
+    )
 
-        add_custom_command(OUTPUT "${outfile}"
-            COMMAND bin2h "${infile}" "${outfile}" ${VARNAME}
-            DEPENDS bin2h "${infile}"
+    MACRO(make_hrtf_header FILENAME VARNAME)
+        SET(infile  ${CMAKE_SOURCE_DIR}/hrtf/${FILENAME})
+        SET(outfile  ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME}.h)
+
+        ADD_CUSTOM_COMMAND(OUTPUT "${outfile}"
+            COMMAND "${BIN2H_COMMAND}" "${infile}" "${outfile}" ${VARNAME}
+            DEPENDS "${BIN2H_COMMAND}" "${infile}"
             COMMENT "Generating ${FILENAME}.h"
             VERBATIM
         )
 
-        set(ALC_OBJS ${ALC_OBJS} "${outfile}")
-    endmacro()
+        SET(ALC_OBJS  ${ALC_OBJS} "${outfile}")
+    ENDMACRO()
 
     make_hrtf_header(default-44100.mhr "hrtf_default_44100")
     make_hrtf_header(default-48000.mhr "hrtf_default_48000")
