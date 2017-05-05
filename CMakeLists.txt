@@ -1104,17 +1104,12 @@ option(ALSOFT_EMBED_HRTF_DATA "Embed the HRTF data files (increases library foot
 if(ALSOFT_EMBED_HRTF_DATA)
     SET(BIN2H_DIR  "${OpenAL_SOURCE_DIR}/utils/bin2h/")
     SET(NATIVE_DIR  "${OpenAL_BINARY_DIR}/native/")
+    SET(BIN2H_COMMAND  "${NATIVE_DIR}bin2h")
     FILE(MAKE_DIRECTORY "${NATIVE_DIR}")
-
-    IF(MSVC)
-        SET(BIN2H_COMMAND  "${NATIVE_DIR}Release/bin2h.exe")
-    ELSE()
-        SET(BIN2H_COMMAND  "${NATIVE_DIR}bin2h")
-    ENDIF()
 
     ADD_CUSTOM_COMMAND(OUTPUT "${BIN2H_COMMAND}"
         COMMAND ${CMAKE_COMMAND} "${BIN2H_DIR}" 
-        COMMAND ${CMAKE_COMMAND} --build . --config "Release"
+        COMMAND ${CMAKE_COMMAND} --build .
         WORKING_DIRECTORY "${NATIVE_DIR}"
         DEPENDS "${BIN2H_DIR}CMakeLists.txt" "${BIN2H_DIR}bin2h.c"
         VERBATIM
