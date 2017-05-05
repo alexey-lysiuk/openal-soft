@@ -1102,22 +1102,27 @@ SET(BACKENDS  "${BACKENDS} Null")
 
 option(ALSOFT_EMBED_HRTF_DATA "Embed the HRTF data files (increases library footprint)" OFF)
 if(ALSOFT_EMBED_HRTF_DATA)
-    SET(BIN2H_DIR "${OpenAL_SOURCE_DIR}/utils/bin2h/")
-    SET(NATIVE_DIR "${OpenAL_BINARY_DIR}/native/")
-    SET(BIN2H_COMMAND "${NATIVE_DIR}bin2h")
+    SET(BIN2H_DIR  "${OpenAL_SOURCE_DIR}/utils/bin2h/")
+    SET(NATIVE_DIR  "${OpenAL_BINARY_DIR}/native/")
     FILE(MAKE_DIRECTORY "${NATIVE_DIR}")
+
+    IF(MSVC)
+        SET(BIN2H_COMMAND  "${NATIVE_DIR}Release/bin2h.exe")
+    ELSE()
+        SET(BIN2H_COMMAND  "${NATIVE_DIR}bin2h")
+    ENDIF()
 
     ADD_CUSTOM_COMMAND(OUTPUT "${BIN2H_COMMAND}"
         COMMAND ${CMAKE_COMMAND} "${BIN2H_DIR}" 
-        COMMAND ${CMAKE_COMMAND} --build .
+        COMMAND ${CMAKE_COMMAND} --build . --config "Release"
         WORKING_DIRECTORY "${NATIVE_DIR}"
         DEPENDS "${BIN2H_DIR}CMakeLists.txt" "${BIN2H_DIR}bin2h.c"
         VERBATIM
     )
 
     MACRO(make_hrtf_header FILENAME VARNAME)
-        SET(infile ${CMAKE_SOURCE_DIR}/hrtf/${FILENAME})
-        SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME}.h)
+        SET(infile  ${CMAKE_SOURCE_DIR}/hrtf/${FILENAME})
+        SET(outfile  ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME}.h)
 
         ADD_CUSTOM_COMMAND(OUTPUT "${outfile}"
             COMMAND "${BIN2H_COMMAND}" "${infile}" "${outfile}" ${VARNAME}
@@ -1126,7 +1131,7 @@ if(ALSOFT_EMBED_HRTF_DATA)
             VERBATIM
         )
 
-        SET(ALC_OBJS ${ALC_OBJS} "${outfile}")
+        SET(ALC_OBJS  ${ALC_OBJS} "${outfile}")
     ENDMACRO()
 
     make_hrtf_header(default-44100.mhr "hrtf_default_44100")
