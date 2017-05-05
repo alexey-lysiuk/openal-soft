@@ -1,4 +1,8 @@
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,7 +53,7 @@ int main (int argc, char *argv[])
     while (0 == feof(input_file))
     {
         unsigned char buffer[4096];
-        size_t count = fread(buffer, 1, sizeof(buffer), input_file);
+        size_t i, count = fread(buffer, 1, sizeof(buffer), input_file);
 
         if (sizeof(buffer) != count)
         {
@@ -60,7 +64,7 @@ int main (int argc, char *argv[])
             }
         }
 
-        for (size_t i = 0; i < count; ++i)
+        for (i = 0; i < count; ++i)
         {
             if ((i & 15) == 0)
             {
