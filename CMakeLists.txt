@@ -1109,7 +1109,8 @@ if(ALSOFT_EMBED_HRTF_DATA)
 
     ADD_CUSTOM_COMMAND(OUTPUT "${BIN2H_COMMAND}"
         COMMAND ${CMAKE_COMMAND} "${BIN2H_DIR}" 
-        COMMAND ${CMAKE_COMMAND} --build .
+        # Explicit configuration is needed for Visual Studio solution
+        COMMAND ${CMAKE_COMMAND} --build . --config "Release"
         WORKING_DIRECTORY "${NATIVE_DIR}"
         DEPENDS "${BIN2H_DIR}CMakeLists.txt" "${BIN2H_DIR}bin2h.c"
         VERBATIM
